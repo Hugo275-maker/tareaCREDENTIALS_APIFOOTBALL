@@ -35,13 +35,16 @@ fun FirestoreRealtimeScreen(){
     var mensaje by remember {mutableStateOf("")}
     var mensajeInput by remember {mutableStateOf("")}
     var conectado by remember {mutableStateOf(false)}
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     DisposableEffect(Unit) {
         val listener = firestoreInstance.addSnapshotListener { snapshot, error ->
             if (error != null) {
                 conectado = false
+                errorMessage = error.message
                 return@addSnapshotListener
             }
+            errorMessage = null
             if (snapshot != null && snapshot.exists()) {
                 contador = snapshot.getLong("contador") ?: 0L
                 mensaje = snapshot.getString("mensaje") ?: ""
@@ -61,9 +64,15 @@ fun FirestoreRealtimeScreen(){
             if (conectado) "Conectado" else "Conectando...",
             style = MaterialTheme.typography.titleMedium
         )
+        errorMessage?.let {
+            Text("Error: $it", color = MaterialTheme.colorScheme.error)
+        }
 
+        Text("Contador: $contador", style = MaterialTheme.typography.headlineMedium)
         Button(onClick = {
-            firestoreInstance.set(mapOf("valor" to FieldValue.increment(1)), SetOptions.merge())
+            // Debe ser el mismo campo que lee el listener ("contador")
+            firestoreInstance.set(mapOf("contador" to FieldValue.increment(1)), SetOptions.merge())
+                .addOnFailureListener { errorMessage = it.message }
         }) {
             Text("+1")
         }
@@ -79,6 +88,7 @@ fun FirestoreRealtimeScreen(){
         Button(
             onClick = {
                 firestoreInstance.set(mapOf("mensaje" to mensajeInput), SetOptions.merge())
+                    .addOnFailureListener { errorMessage = it.message }
             }, modifier = Modifier.fillMaxWidth()
         ){
             Text("Actualizar mensaje")

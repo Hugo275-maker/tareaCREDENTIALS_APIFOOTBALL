@@ -34,6 +34,18 @@ fun DrawerScaffold(navController: NavController,
 {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val currentRoute = navController.currentBackStackEntry?.destination?.route
+
+    // Cierra el drawer y navega sin apilar la misma pantalla varias veces
+    fun goTo(route: String) {
+        scope.launch { drawerState.close() }
+        if (route != currentRoute) {
+            navController.navigate(route) {
+                popUpTo("home")
+                launchSingleTop = true
+            }
+        }
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -44,51 +56,39 @@ fun DrawerScaffold(navController: NavController,
                 //NavigationDrawerItem
                 NavigationDrawerItem(
                     label = { Text("Home")},
-                    selected = false,
-                    onClick = {
-                        navController.navigate("home")
-                    }
+                    selected = currentRoute == "home",
+                    onClick = { goTo("home") }
                 )
                 NavigationDrawerItem(
                     label = { Text("Permissions")},
-                    selected = false,
-                    onClick = {
-                        navController.navigate("permissions")
-                    }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Favorites")},
-                    selected = false,
-                    onClick = {
-                        navController.navigate("favorites")
-                    }
+                    selected = currentRoute == "permissions",
+                    onClick = { goTo("permissions") }
                 )
                 NavigationDrawerItem(
                     label = { Text("Real Time")},
-                    selected = false,
-                    onClick = {
-                        navController.navigate("realtime")
-                    }
+                    selected = currentRoute == "realtime",
+                    onClick = { goTo("realtime") }
                 )
                 NavigationDrawerItem(
                     label = { Text("Supabase Storage")},
-                    selected = false,
-                    onClick = {
-                        navController.navigate("supabase")
-                    }
+                    selected = currentRoute == "supabase",
+                    onClick = { goTo("supabase") }
                 )
                 NavigationDrawerItem(
                     label = { Text("API Football")},
-                    selected = false,
-                    onClick = {
-                        navController.navigate("apifootball")
-                    }
+                    selected = currentRoute == "apifootball",
+                    onClick = { goTo("apifootball") }
                 )
                 NavigationDrawerItem(
                     label = { Text("Firebase Logout")},
                     selected = false,
                     onClick = {
+                        scope.launch { drawerState.close() }
                         FirebaseAuthManager.logout()
+                        // Limpia todo el back stack para no volver atrás a pantallas privadas
+                        navController.navigate("login") {
+                            popUpTo(0) { inclusive = true }
+                        }
                     }
                 )
             }

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dev.lchang.appuesan.data.remote.apifootball.Country
 import dev.lchang.appuesan.data.remote.apifootball.RetrofitInstance
 import dev.lchang.appuesan.data.remote.apifootball.TeamWrapper
+import dev.lchang.appuesan.data.remote.apifootball.toErrorMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -27,11 +28,21 @@ class ApiFootballViewModel: ViewModel(){
     }
 
     fun loadCountries(){
+        if (!RetrofitInstance.isConfigured) {
+            _errorMessages.value = "Falta API_BASE_URL o API_KEY en local.properties"
+            return
+        }
         viewModelScope.launch {
             _isLoading.value  = true
+            _errorMessages.value = null
             try {
                 val response = RetrofitInstance.api.getCountries()
-                _countries.value = response.response
+                val apiError = response.errors.toErrorMessage()
+                if (apiError != null) {
+                    _errorMessages.value = apiError
+                } else {
+                    _countries.value = response.response.sortedBy { it.name }
+                }
             }catch (e: Exception){
                 _errorMessages.value = e.message
             }finally {
@@ -43,11 +54,16 @@ class ApiFootballViewModel: ViewModel(){
     fun loadTeamsByCountry(country: Country){
         viewModelScope.launch {
             _isLoading.value = true
+            _errorMessages.value = null
             try {
                 val response = RetrofitInstance.api.getTeamsByCountry(country.name)
-                _teams.value = response.response
-                _errorMessages.value = null
-                _selectedCountry.value = country
+                val apiError = response.errors.toErrorMessage()
+                if (apiError != null) {
+                    _teams.value = emptyList()
+                    _errorMessages.value = apiError
+                } else {
+                    _teams.value = response.response
+                }
             }catch (e: Exception){
                 _errorMessages.value = e.message
             }finally {
@@ -59,6 +75,13 @@ class ApiFootballViewModel: ViewModel(){
     fun onCountrySelected(country: Country){
         _selectedCountry.value = country
         loadTeamsByCountry(country)
+    }
+
+    // Reintenta la última operación que falló
+    fun retry(){
+        val country = _selectedCountry.value
+        if (_countries.value.isEmpty()) loadCountries()
+        else if (country != null) loadTeamsByCountry(country)
     }
 
 

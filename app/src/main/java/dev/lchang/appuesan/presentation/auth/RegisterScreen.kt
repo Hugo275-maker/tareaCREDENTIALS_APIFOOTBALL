@@ -15,15 +15,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import dev.lchang.appuesan.data.remote.FirebaseAuthManager
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Composable
@@ -35,6 +35,7 @@ fun RegisterScreen(navController: NavController)
     var confirmPassword by remember { mutableStateOf("") }
 
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
 
     Column(
@@ -68,6 +69,7 @@ fun RegisterScreen(navController: NavController)
             onValueChange = {password = it},
             placeholder = {Text("Contraseña")},
             label = {Text("Contraseña")},
+            visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -76,16 +78,18 @@ fun RegisterScreen(navController: NavController)
             onValueChange = {confirmPassword = it},
             placeholder = {Text("Confirmar Contraseña")},
             label = {Text("Confirmar Contraseña")},
+            visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
 
         Button(
-            enabled = password == confirmPassword,
+            enabled = name.isNotBlank() && email.isNotBlank() &&
+                    password.isNotBlank() && password == confirmPassword,
             onClick = {
-                CoroutineScope(Dispatchers.Main).launch {
+                scope.launch {
                     val result = FirebaseAuthManager.registerUser(name, email, password)
                     if(result.isSuccess)
-                        navController.navigate("login")
+                        navController.popBackStack()
                     else {
                         //Toast message
                         val error = result.exceptionOrNull()?.message ?:"Error desconocido"

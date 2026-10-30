@@ -38,6 +38,9 @@ object FirebaseAuthManager {
         }
     }
 
+    val isLoggedIn: Boolean
+        get() = auth.currentUser != null
+
     fun logout(){
         auth.signOut()
     }

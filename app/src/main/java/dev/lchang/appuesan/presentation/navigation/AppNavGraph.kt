@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import dev.lchang.appuesan.data.remote.FirebaseAuthManager
 import dev.lchang.appuesan.presentation.apifootball.ApiFootballScreen
 import dev.lchang.appuesan.presentation.auth.LoginScreen
 import dev.lchang.appuesan.presentation.auth.RegisterScreen
@@ -17,7 +18,7 @@ fun AppNavGraph(){
     val navController = rememberNavController()
 
     NavHost(navController = navController,
-            startDestination = "login")
+            startDestination = if (FirebaseAuthManager.isLoggedIn) "home" else "login")
     {
         composable("register") { RegisterScreen(navController) }
         composable("login") { LoginScreen(navController) }
